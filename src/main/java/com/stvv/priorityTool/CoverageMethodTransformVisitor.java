@@ -19,7 +19,7 @@ public class CoverageMethodTransformVisitor extends MethodVisitor implements Opc
 	public void visitLineNumber(int line, Label start) {
 		this.line = line;
 		mv.visitLdcInsn(className + ":" + line + "\n");
-		mv.visitMethodInsn(INVOKESTATIC, "com/stvv/agent/HashsetUtil", "addLine", "(Ljava/lang/String;)V", false);
+		mv.visitMethodInsn(INVOKESTATIC, "com/stvv/priorityTool/HashsetUtil", "addLine", "(Ljava/lang/String;)V", false);
 		super.visitLineNumber(line, start);
 
 	}
@@ -27,7 +27,7 @@ public class CoverageMethodTransformVisitor extends MethodVisitor implements Opc
 	@Override
 	public void visitLabel(Label label) {
 		mv.visitLdcInsn(className + ":" + line + "\n");
-		mv.visitMethodInsn(INVOKESTATIC, "com/stvv/agent/HashsetUtil", "addLine", "(Ljava/lang/String;)V", false);
+		mv.visitMethodInsn(INVOKESTATIC, "com/stvv/priorityTool/HashsetUtil", "addLine", "(Ljava/lang/String;)V", false);
 		super.visitLabel(label);
 	}
 }
