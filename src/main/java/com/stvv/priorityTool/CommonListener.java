@@ -12,7 +12,7 @@ public class CommonListener extends RunListener {
 
 	public void testStarted(Description description) {
 
-		HashsetUtil.startClass("[TEST] " + description.getClassName() + ":" + description.getMethodName());
+		HashsetUtil.startClass( description.getClassName() + ":" + description.getMethodName());
 
 	}
 
