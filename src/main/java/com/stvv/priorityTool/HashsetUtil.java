@@ -7,130 +7,155 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class HashsetUtil {
-    private static HashSet<String> hashSet = new HashSet<String>();
-    private static String className;
-    private static ArrayList<TestCoverageInfo> testCoverageInfos = new ArrayList<>();
-    private static ArrayList<ClassCoverageInfo> addPriorityList = new ArrayList<>();
-    private static Map<String, ClassCoverageInfo> cpMap = new HashMap<>();
-    private static Comparator<TestCoverageInfo> priorityComparator = new Comparator<TestCoverageInfo>() {
-        @Override
-        public int compare(TestCoverageInfo o1, TestCoverageInfo o2) {
-            return o2.getCoverage().size() - o1.getCoverage().size();
-        }
-    };
+	private static HashSet<String> hashSet = new HashSet<String>();
+	private static String className;
+	private static ArrayList<TestCoverageInfo> testCoverageInfos = new ArrayList<>();
+	private static ArrayList<ClassCoverageInfo> addPriorityList = new ArrayList<>();
+	private static Map<String, ClassCoverageInfo> cpMap = new HashMap<>();
+	private static Comparator<TestCoverageInfo> priorityComparator = new Comparator<TestCoverageInfo>() {
+		@Override
+		public int compare(TestCoverageInfo o1, TestCoverageInfo o2) {
+			return o2.getCoverage().size() - o1.getCoverage().size();
+		}
+	};
 
-    public static void startClass(String text) {
-        className = text;
-    }
+	public static void startClass(String text) {
+		className = text;
+	}
 
-    public static void addLine(String line) {
-        hashSet.add(line);
-    }
+	public static void addLine(String line) {
+		hashSet.add(line);
+	}
 
-    public static void writeToFile(String line, String filename) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename + ".txt", true))) {
-            bw.write(line + " \n");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+	public static void writeToFile(String line, String filename) {
+		try (BufferedWriter bw = new BufferedWriter(
+				new FileWriter("src/test/java/org/joda/time/" + filename + ".java", true))) {
+			bw.write("package org.joda.time;\n");
+			bw.write("import java.util.Locale;\n");
+			bw.write("import java.util.TimeZone;\n");
+			bw.write("import junit.framework.Test;\n");
+			bw.write("import junit.framework.TestCase;\n");
+			bw.write("import junit.framework.TestSuite;\n");
+			bw.write("public class " + filename + " extends TestCase {\n");
+			bw.write("public " + filename + "(String testName) {\n");
+			bw.write("super(testName);\n");
+			bw.write("}\n");
+			bw.write("public static Test suite() {\n");
+			bw.write("TestSuite suite = new TestSuite();\n");
+			bw.write(line);
+			bw.write("return suite;\n");
+			bw.write("}\n");
+			bw.write("public static void main(String args[]) {\n");
+			bw.write("TimeZone.setDefault(TimeZone.getTimeZone(\"Asia/Seoul\"));\n");
+			bw.write("Locale.setDefault(new Locale(\"th\", \"TH\"));\n");
+			bw.write("String[] testCaseName = {\n");
+			bw.write(filename + ".class.getName()\n");
+			bw.write("};\n");
+			bw.write("junit.textui.TestRunner.main(testCaseName);\n");
+			bw.write("}\n");
+			bw.write("}\n");
 
-    public static void addToMap() {
-        testCoverageInfos.add(new TestCoverageInfo(className, hashSet));
-        hashSet = new HashSet<String>();
-    }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
-    public static void printLines() {
-        StringBuilder line = new StringBuilder();
+	public static void addToMap() {
+		testCoverageInfos.add(new TestCoverageInfo(className, hashSet));
+		hashSet = new HashSet<String>();
+	}
 
-        Collections.sort(testCoverageInfos, priorityComparator);
+	public static void printLines() {
+		StringBuilder line = new StringBuilder();
 
-        getClassPriority();
-        Iterator<String> iterator = cpMap.keySet().iterator();
-        while (iterator.hasNext()) {
-            String className = iterator.next();
-            line.append(className + " : " + cpMap.get(className).getCoverage().size() + "\n");
-        }
-        writeToFile(line.toString(), "total");
-        line = new StringBuilder();
+		Collections.sort(testCoverageInfos, priorityComparator);
 
-        while (cpMap.size() > 0) {
-            getAddClassPriority();
-            cpMap = sortByComparator(cpMap, false);
-        }
+		getClassPriority();
+		Iterator<String> iterator = cpMap.keySet().iterator();
+		while (iterator.hasNext()) {
+			String className = iterator.next();
+			line.append("suite.addTest(" + className + ".suite());" + "\n");
+		}
+		writeToFile(line.toString(), "TotalTestAllPackages");
+		line = new StringBuilder();
 
-        Iterator<ClassCoverageInfo> addIterator = addPriorityList.iterator();
-        while (addIterator.hasNext()) {
-            ClassCoverageInfo curr = addIterator.next();
-            line.append(curr.getClassName() + " : " + curr.getCoverage().size() + "\n");
-        }
+		while (cpMap.size() > 0) {
+			getAddClassPriority();
+			cpMap = sortByComparator(cpMap, false);
+		}
 
-        writeToFile(line.toString(), "additive");
-    }
+		Iterator<ClassCoverageInfo> addIterator = addPriorityList.iterator();
+		while (addIterator.hasNext()) {
+			ClassCoverageInfo curr = addIterator.next();
+			line.append("suite.addTest(" + curr.getClassName() + ".suite());" + "\n");
+		}
 
-    private static void getAddClassPriority() {
-        ClassCoverageInfo curr;
-        Iterator<String> strIterator = cpMap.keySet().iterator();
-        if (strIterator.hasNext()) {
-            curr = cpMap.get(strIterator.next());
-            hashSet.addAll(curr.getCoverage());
-            addPriorityList.add(curr);
-            cpMap.remove(curr.getClassName());
-        }
-        Iterator<Entry<String, ClassCoverageInfo>> iterator = cpMap.entrySet().iterator();
-        while (iterator.hasNext()) {
-            curr = iterator.next().getValue();
-            curr.getCoverage().removeAll(hashSet);
-        }
-    }
+		writeToFile(line.toString(), "AdditiveTestAllPackages");
+	}
 
-    private static void getClassPriority() {
-        Iterator<TestCoverageInfo> iterator = testCoverageInfos.iterator();
-        while (iterator.hasNext()) {
-            TestCoverageInfo curr = iterator.next();
-            String className = curr.getTestName().split(":")[0];
-            ClassCoverageInfo coverageInfo;
-            if (cpMap.containsKey(className)) {
-                coverageInfo = cpMap.get(className);
-                HashSet<String> temp = coverageInfo.getCoverage();
-                temp.addAll(curr.getCoverage());
-                cpMap.put(className, coverageInfo);
-            } else {
-                coverageInfo = new ClassCoverageInfo(className, curr.getCoverage());
-                cpMap.put(className, coverageInfo);
-            }
-        }
-        cpMap = sortByComparator(cpMap, false);
-    }
+	private static void getAddClassPriority() {
+		ClassCoverageInfo curr;
+		Iterator<String> strIterator = cpMap.keySet().iterator();
+		if (strIterator.hasNext()) {
+			curr = cpMap.get(strIterator.next());
+			hashSet.addAll(curr.getCoverage());
+			addPriorityList.add(curr);
+			cpMap.remove(curr.getClassName());
+		}
+		Iterator<Entry<String, ClassCoverageInfo>> iterator = cpMap.entrySet().iterator();
+		while (iterator.hasNext()) {
+			curr = iterator.next().getValue();
+			curr.getCoverage().removeAll(hashSet);
+		}
+	}
 
-    private static Map<String, ClassCoverageInfo> sortByComparator(Map<String, ClassCoverageInfo> unsortMap,
-                                                                   final boolean order) {
+	private static void getClassPriority() {
+		Iterator<TestCoverageInfo> iterator = testCoverageInfos.iterator();
+		while (iterator.hasNext()) {
+			TestCoverageInfo curr = iterator.next();
+			String className = curr.getTestName().split(":")[0];
+			ClassCoverageInfo coverageInfo;
+			if (cpMap.containsKey(className)) {
+				coverageInfo = cpMap.get(className);
+				HashSet<String> temp = coverageInfo.getCoverage();
+				temp.addAll(curr.getCoverage());
+				cpMap.put(className, coverageInfo);
+			} else {
+				coverageInfo = new ClassCoverageInfo(className, curr.getCoverage());
+				cpMap.put(className, coverageInfo);
+			}
+		}
+		cpMap = sortByComparator(cpMap, false);
+	}
 
-        List<Entry<String, ClassCoverageInfo>> list = new LinkedList<Entry<String, ClassCoverageInfo>>(
-                unsortMap.entrySet());
+	private static Map<String, ClassCoverageInfo> sortByComparator(Map<String, ClassCoverageInfo> unsortMap,
+			final boolean order) {
 
-        Integer val1 = new Integer(-1);
-        Integer val2 = new Integer(-1);
-        // Sorting the list based on values
-        Collections.sort(list, new Comparator<Entry<String, ClassCoverageInfo>>() {
-            public int compare(Entry<String, ClassCoverageInfo> o1, Entry<String, ClassCoverageInfo> o2) {
-                Integer val1 = (Integer) o1.getValue().getCoverage().size();
-                Integer val2 = (Integer) o2.getValue().getCoverage().size();
-                if (order) {
-                    return val1.compareTo(val2);
-                } else {
-                    return val2.compareTo(val1);
+		List<Entry<String, ClassCoverageInfo>> list = new LinkedList<Entry<String, ClassCoverageInfo>>(
+				unsortMap.entrySet());
 
-                }
-            }
-        });
+		Integer val1 = new Integer(-1);
+		Integer val2 = new Integer(-1);
+		// Sorting the list based on values
+		Collections.sort(list, new Comparator<Entry<String, ClassCoverageInfo>>() {
+			public int compare(Entry<String, ClassCoverageInfo> o1, Entry<String, ClassCoverageInfo> o2) {
+				Integer val1 = (Integer) o1.getValue().getCoverage().size();
+				Integer val2 = (Integer) o2.getValue().getCoverage().size();
+				if (order) {
+					return val1.compareTo(val2);
+				} else {
+					return val2.compareTo(val1);
 
-        // Maintaining insertion order with the help of LinkedList
-        Map<String, ClassCoverageInfo> sortedMap = new LinkedHashMap<String, ClassCoverageInfo>();
-        for (Entry<String, ClassCoverageInfo> entry : list) {
-            sortedMap.put(entry.getKey(), entry.getValue());
-        }
+				}
+			}
+		});
 
-        return sortedMap;
-    }
+		// Maintaining insertion order with the help of LinkedList
+		Map<String, ClassCoverageInfo> sortedMap = new LinkedHashMap<String, ClassCoverageInfo>();
+		for (Entry<String, ClassCoverageInfo> entry : list) {
+			sortedMap.put(entry.getKey(), entry.getValue());
+		}
+
+		return sortedMap;
+	}
 }
