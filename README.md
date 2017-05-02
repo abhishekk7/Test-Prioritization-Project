@@ -7,7 +7,7 @@
 <li>Browse to the Location of Test-Prioritization-Project, Click ok</li>
 <li>Choose the priorityTool pom.xml in the list and click Finish</li>
 <li>Right-click on the priority tool and go to RunAs and select Maven install.</li>
-<li>Get a maven project (Eg, Joda-Time, https://github.com/JodaOrg/joda-time) and set it up similarly, and make sure there are no errors.<li>
+<li>Get a maven project (Eg, Joda-Time, https://github.com/JodaOrg/joda-time) and set it up similarly, and make sure there are no errors.</li>
 <li>Copy priorityTool-0.0.1-SNAPSHOT.jar from priorityTool/target and paste it into the project to be tested(Eg, joda-time)</li>
 <li>Copy asm-5.0.3.jar from the folder into the project to be tested(Eg, joda-time).</li>
 <li>Open the project to be tested's pom.xml</li>
